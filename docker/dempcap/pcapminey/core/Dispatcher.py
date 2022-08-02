@@ -94,10 +94,13 @@ class Dispatcher:
                     if stream.tsFirstPacket:
                         file.timestamp = stream.tsFirstPacket
                     files.append(file)
-                    
+
 
         return (stream, files)
 
 if __name__ == '__main__':
-    d = Dispatcher(os.path.dirname(__file__) + '/../tests/webextract/web_light.pcap')
+    d = Dispatcher(
+        f'{os.path.dirname(__file__)}/../tests/webextract/web_light.pcap'
+    )
+
     d.run()

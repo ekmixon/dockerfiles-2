@@ -36,7 +36,7 @@ class PluginManager:
         for pluginfile in os.listdir(path):
             if not os.path.isfile(path + pluginfile):
                 continue
-            if not pluginfile[-3:] == ".py":
+            if pluginfile[-3:] != ".py":
                 continue
             if pluginfile.endswith("__init__.py"):
                 continue

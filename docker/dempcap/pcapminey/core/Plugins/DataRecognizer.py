@@ -37,22 +37,22 @@ class DataRecognizer(Plugin):
 
 
     @abstractproperty
-    def signatures(cls):
+    def signatures(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented
 
     @abstractproperty
-    def fileEnding(cls):
+    def fileEnding(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented
 
     @abstractproperty
-    def dataType(cls):
+    def dataType(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented
 
     @abstractproperty
-    def dataCategory(cls):
+    def dataCategory(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented
 
@@ -64,7 +64,7 @@ class DataRecognizer(Plugin):
                 regexstr += b'(%s.*)|' % (fileHeader,)
             else:
                 regexstr += b'(%s.*?%s)|' % (fileHeader, fileTrailer)
-       
+
         cls._regex = re.compile(regexstr[:-1], re.DOTALL)
 
     @classmethod
@@ -83,12 +83,9 @@ class DataRecognizer(Plugin):
     def findAllOccurences(cls, data, startindex=0, endindex=0):
         if not hasattr(cls, '_regex'):
             cls._buildRegexPatterns()
-        
+
         if endindex == 0:
             endindex = len(data)
 
-        #tr = tracker.SummaryTracker()
-        occurences = [m.span() for m in cls._regex.finditer(data, startindex, endindex)]
-
         #tr.print_diff()
-        return occurences
+        return [m.span() for m in cls._regex.finditer(data, startindex, endindex)]

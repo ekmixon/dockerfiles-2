@@ -9,10 +9,11 @@ import string
 def get_latest_tag(image_name, verbose=TabError):
     last_tag = None
     last_date = None
-    url = "https://registry.hub.docker.com/v2/repositories/{}/tags/?page_size=25".format(image_name)
+    url = f"https://registry.hub.docker.com/v2/repositories/{image_name}/tags/?page_size=25"
+
     while True:
         if verbose:
-            print("Querying docker hub url: {}".format(url))
+            print(f"Querying docker hub url: {url}")
         res = requests.get(url)
         res.raise_for_status()
         obj = res.json()
@@ -29,9 +30,9 @@ def get_latest_tag(image_name, verbose=TabError):
         else:
             break
     if verbose:
-        print("last tag: {}, date: {}".format(last_tag, last_date))
+        print(f"last tag: {last_tag}, date: {last_date}")
     if not last_tag:
-        raise Exception('No tag found for image: {}'.format(image_name))
+        raise Exception(f'No tag found for image: {image_name}')
     return last_tag
 
 

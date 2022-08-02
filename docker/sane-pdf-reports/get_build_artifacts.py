@@ -49,20 +49,18 @@ def send_request(url):
     if response.getcode() == 200:
         return response.read()
     else:
-        raise IOError(
-            'Received code {}: {}'.format(response.getcode(), response.read()))
+        raise IOError(f'Received code {response.getcode()}: {response.read()}')
 
 
 def get_artifacts(base_url, branch, artifact_filter):
-    url = '{}/latest/artifacts?branch={}'.format(base_url, branch)
+    url = f'{base_url}/latest/artifacts?branch={branch}'
     logging.info(f"URL={url}")
     artifacts = send_request(url)
-    result = []
-    for artifact in json.loads(artifacts):
-        # If matches then return it
-        if re.match(artifact_filter, artifact['path']):
-            result.append(artifact['url'])
-    return result
+    return [
+        artifact['url']
+        for artifact in json.loads(artifacts)
+        if re.match(artifact_filter, artifact['path'])
+    ]
 
 
 def download_artifacts(artifacts):
@@ -72,7 +70,7 @@ def download_artifacts(artifacts):
         rsp = send_request(url)
         with open(os.path.basename(url), "wb") as f:
             f.write(rsp)
-            logging.info('Wrote {}'.format(f.name))
+            logging.info(f'Wrote {f.name}')
 
 
 def main():
@@ -83,7 +81,7 @@ def main():
     filter = args["filter"]
     org = args["organization"]
 
-    base_url = '{}/{}/{}'.format(API_URL, org, project)
+    base_url = f'{API_URL}/{org}/{project}'
 
     artifacts = get_artifacts(base_url, branch, filter)
     logging.info(f"Artifacts: {artifacts}")

@@ -26,15 +26,14 @@ class EntropyClassifier:
         h = cls._histogram(data)
         s = cls._shannonEntropy(h, l)
 
-        if s >= cls.RANDOM_ENTROPY:
-            c = cls._chiSquare(h, l)
-            if c > cls.CHI2_LOWER_BOUND and c < cls.CHI2_UPPER_BOUND:
-                return EntropyClass.ENCRYPTED
-            else:
-                return EntropyClass.COMPRESSED
-
-        else:
+        if s < cls.RANDOM_ENTROPY:
             return EntropyClass.PLAIN
+        c = cls._chiSquare(h, l)
+        return (
+            EntropyClass.ENCRYPTED
+            if c > cls.CHI2_LOWER_BOUND and c < cls.CHI2_UPPER_BOUND
+            else EntropyClass.COMPRESSED
+        )
 
     @classmethod
     def _shannonEntropy(cls, histogram, datalength):

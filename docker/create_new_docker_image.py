@@ -43,33 +43,33 @@ RUN pwsh -c "Install-Module -ErrorAction Stop -Scope AllUsers {modules}"
 
 
 def create_powershell_image(folder, base_image, args):
-    docker_file = open(folder + "/Dockerfile", "w+")
-    docker_file.write(DOCKER_POWERSHELL.format(image=base_image, modules=",".join(args.pkg)))
-    docker_file.close()
+    with open(f"{folder}/Dockerfile", "w+") as docker_file:
+        docker_file.write(DOCKER_POWERSHELL.format(image=base_image, modules=",".join(args.pkg)))
 
 
 def create_python_image(folder, base_image, args):
     docker_template = DOCKER_PYTHON_ALPINE if args.linux == 'alpine' else DOCKER_PYTHON_DEBIAN
-    docker_file = open(folder + "/Dockerfile", "w+")
-    python_ver = "2" if args.python == "two" else "3"
-    docker_file.write(docker_template.format(image=base_image, python_ver=python_ver))
-    docker_file.close()
+    with open(f"{folder}/Dockerfile", "w+") as docker_file:
+        python_ver = "2" if args.python == "two" else "3"
+        docker_file.write(docker_template.format(image=base_image, python_ver=python_ver))
     # copy gitignore from python image
-    shutil.copy(sys.path[0] + "/python/.gitignore", folder)
+    shutil.copy(f"{sys.path[0]}/python/.gitignore", folder)
     print("Initializing pipenv...")
     print('========================================')
-    pipenv_param = "--two" if args.python == "two" else "--three"    
+    pipenv_param = "--two" if args.python == "two" else "--three"
     my_env = os.environ.copy()
     my_env['PIPENV_MAX_DEPTH'] = '1'
     subprocess.call(["pipenv", pipenv_param], cwd=folder, env=my_env)
     if args.pkg:
-        print("Installing python packages: {}".format(args.pkg))
+        print(f"Installing python packages: {args.pkg}")
         cmd_arr = ["pipenv", "install"]
         cmd_arr.extend(args.pkg)
         subprocess.call(cmd_arr, cwd=folder, env=my_env)
     else:
         subprocess.call(["pipenv", "lock"], cwd=folder, env=my_env)
-    print("NOTE: To install additional python packages: cd {}; pipenv install <package>".format(folder))
+    print(
+        f"NOTE: To install additional python packages: cd {folder}; pipenv install <package>"
+    )
 
 
 LINUX_DIST_TO_SUFFIX = {
@@ -104,32 +104,39 @@ def main():
     version = "" if (args.type == 'powershell' or args.python == 'two') else '3'
     linux = LINUX_DIST_TO_SUFFIX[args.linux]
 
-    base_image = "demisto/{}{}{}".format(args.type, version, linux)
+    base_image = f"demisto/{args.type}{version}{linux}"
 
     print(args)
     print("docker dir: ".format(sys.path[0]))
-    print("Using base image: {}".format(base_image))
-    folder = "{}/{}".format(sys.path[0], args.name)
+    print(f"Using base image: {base_image}")
+    folder = f"{sys.path[0]}/{args.name}"
     if os.path.exists(folder):
-        sys.stderr.write('Error: Folder [{}] already exists. Must specify a new image name.\n'.format(folder))
+        sys.stderr.write(
+            f'Error: Folder [{folder}] already exists. Must specify a new image name.\n'
+        )
+
         sys.exit(1)
 
     last_tag = get_latest_tag(base_image)
-    base_image_last = "{}:{}".format(base_image, last_tag)
-    print("Latest base image: " + base_image_last)
+    base_image_last = f"{base_image}:{last_tag}"
+    print(f"Latest base image: {base_image_last}")
     os.mkdir(folder)
-    conf_file = open(folder + "/build.conf", "w+")
-    conf_file.write("version=1.0.0\n")
-    conf_file.close()
+    with open(f"{folder}/build.conf", "w+") as conf_file:
+        conf_file.write("version=1.0.0\n")
     if args.type == "python":
         create_python_image(folder, base_image_last, args)
     else:
         create_powershell_image(folder, base_image_last, args)
-    print('Adding: {} to .dependabot/config.yml ...'.format(folder))
-    subprocess.check_call([sys.path[0] + "/add_dependabot.sh", "docker/" + args.name])
+    print(f'Adding: {folder} to .dependabot/config.yml ...')
+    subprocess.check_call(
+        [f"{sys.path[0]}/add_dependabot.sh", f"docker/{args.name}"]
+    )
+
     print('========================================')
-    print("Done creating image files in folder: " + folder)
-    print("\nTo build locally the docker image run: {}/build_docker.sh {}".format(sys.path[0], args.name))
+    print(f"Done creating image files in folder: {folder}")
+    print(
+        f"\nTo build locally the docker image run: {sys.path[0]}/build_docker.sh {args.name}"
+    )
 
 
 if __name__ == "__main__":

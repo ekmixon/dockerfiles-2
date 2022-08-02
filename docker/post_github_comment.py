@@ -18,12 +18,15 @@ def get_docker_image_size(docker_image):
     for i in (1, 2, 3):
         try:
             name, tag = docker_image.split(':')
-            res = requests.get('https://hub.docker.com/v2/repositories/{}/tags/{}/'.format(name, tag))
+            res = requests.get(
+                f'https://hub.docker.com/v2/repositories/{name}/tags/{tag}/'
+            )
+
             res.raise_for_status()
             size_bytes = res.json()['images'][0]['size']
             size = '{0:.2f} MB'.format(float(size_bytes)/1024/1024)
         except Exception as ex:
-            print("[{}] failed getting image size for image: {}. Err: {}".format(i, docker_image, ex))
+            print(f"[{i}] failed getting image size for image: {docker_image}. Err: {ex}")
             if i != 3:
                 print("Sleeping 5 seconds and trying again...")
                 time.sleep(5)
@@ -53,11 +56,15 @@ if CIRCLE_PULL_REQUEST will try to get issue id from last commit comment
         last_comment = subprocess.check_output(["git", "log", "-1", "--pretty=%B"])
         m = re.search(r"#(\d+)", last_comment, re.MULTILINE)
         if not m:
-            print("No issue id found in last commit comment. Ignoring: \n------\n{}\n-------".format(last_comment))
+            print(
+                f"No issue id found in last commit comment. Ignoring: \n------\n{last_comment}\n-------"
+            )
+
             return
-        issue_id = m.group(1)
-        print("Issue id found from last commit comment: " + issue_id)
-        post_url = "https://api.github.com/repos/demisto/dockerfiles/issues/{}/comments".format(issue_id)
+        issue_id = m[1]
+        print(f"Issue id found from last commit comment: {issue_id}")
+        post_url = f"https://api.github.com/repos/demisto/dockerfiles/issues/{issue_id}/comments"
+
     inspect_format = '''
 - Image ID: `{{ .Id }}`
 - Created: `{{ .Created }}`
@@ -69,27 +76,39 @@ if CIRCLE_PULL_REQUEST will try to get issue id from last commit comment
 '''
     docker_info = subprocess.check_output(["docker", "inspect", "-f", inspect_format, args.docker_image])
     base_name = args.docker_image.split(':')[0]
-    mode = "Dev"
-    if base_name.startswith('demisto/'):
-        mode = "Production"
+    mode = "Production" if base_name.startswith('demisto/') else "Dev"
     message = (
-        "# Docker Image Ready - {}\n\n".format(mode) +
-        "Docker automatic build at CircleCI has deployed your docker image: {}\n".format(args.docker_image) +
-        "It is available now on docker hub at: https://hub.docker.com/r/{}/tags\n".format(base_name) +
-        "Get started by pulling the image:\n" +
-        "```\n" +
-        "docker pull {}\n".format(args.docker_image) +
-        "```\n\n" +
-        "## Docker Metadata\n" +
-        "- Image Size: `{}`\n".format(get_docker_image_size((args.docker_image))) +
-        docker_info
-    )
-    print("Going to post comment:\n\n{}".format(message))
+        (
+            (
+                (
+                    (
+                        (
+                            (
+                                (
+                                    f"# Docker Image Ready - {mode}\n\n"
+                                    + f"Docker automatic build at CircleCI has deployed your docker image: {args.docker_image}\n"
+                                )
+                                + f"It is available now on docker hub at: https://hub.docker.com/r/{base_name}/tags\n"
+                            )
+                            + "Get started by pulling the image:\n"
+                        )
+                        + "```\n"
+                    )
+                    + f"docker pull {args.docker_image}\n"
+                )
+                + "```\n\n"
+            )
+            + "## Docker Metadata\n"
+        )
+        + f"- Image Size: `{get_docker_image_size(args.docker_image)}`\n"
+    ) + docker_info
+
+    print(f"Going to post comment:\n\n{message}")
     res = requests.post(post_url, json={"body": message}, auth=(os.environ['GITHUB_KEY'], 'x-oauth-basic'))
     try:
         res.raise_for_status()
     except Exception as ex:
-        print("Failed comment post: {}".format(ex))    
+        print(f"Failed comment post: {ex}")    
 
 
 if __name__ == "__main__":

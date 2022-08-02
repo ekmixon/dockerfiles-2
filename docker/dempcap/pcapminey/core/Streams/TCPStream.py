@@ -10,7 +10,7 @@ class TCPStream(PacketStream):
     def __init__(self, ipSrc, portSrc, ipDst, portDst):
         PacketStream.__init__(self, ipSrc, portSrc, ipDst, portDst)
 
-        self.packets = dict()
+        self.packets = {}
 
     def __len__(self):
         return len(self.packets)
@@ -33,9 +33,7 @@ class TCPStream(PacketStream):
 
 
     def __iter__(self):
-        sortedPackets = sorted(self.packets.values(), key=lambda v: v.seq)
-        for packet in sortedPackets:
-            yield packet
+        yield from sorted(self.packets.values(), key=lambda v: v.seq)
 
     def getFirstBytes(self, count):
         with closing(StringIO()) as bytes:
@@ -57,7 +55,7 @@ class TCPStream(PacketStream):
     def isValid(self):
         if len(self.packets) == 0:
             return False
-        
+
         sortedPackets = sorted(self.packets.values(), key=lambda v: v.seq)
         firstPacket = sortedPackets[0]
 
@@ -67,9 +65,5 @@ class TCPStream(PacketStream):
             if packet.seq != nextSeq:
                 return False
 
-            if len(packet.data) == 0:
-                nextSeq += 1
-            else:
-                nextSeq += len(packet.data)
-
+            nextSeq += 1 if len(packet.data) == 0 else len(packet.data)
         return True

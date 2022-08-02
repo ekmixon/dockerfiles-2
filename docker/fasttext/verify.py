@@ -1,3 +1,3 @@
 import fasttext
 
-print("Imported fasttext successfully: {}".format(fasttext))
+print(f"Imported fasttext successfully: {fasttext}")

@@ -9,6 +9,6 @@ class Plugin:
     basePriority = 50
 
     @abstractmethod
-    def getPriority(cls):
+    def getPriority(self):
         """ IMPORTANT: Override as Class Method (using @classmethod) """
         return NotImplemented

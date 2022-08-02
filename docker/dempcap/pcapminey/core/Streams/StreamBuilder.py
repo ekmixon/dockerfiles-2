@@ -160,13 +160,15 @@ class StreamBuilder:
             #if caplenError:
                 #print '\nWarning: Packet loss due to too small capture length!'
 
-    def __findLastStreamOccurenceIn(cls, list, ipSrc, portSrc, ipDst, portDst):
-        for stream in list[::-1]:
-            if stream.portSrc == portSrc \
-                    and stream.portDst == portDst \
-                    and stream.ipSrc == socket.inet_ntoa(ipSrc) \
-                    and stream.ipDst == socket.inet_ntoa(ipDst):
-
-                    return stream
-
-        return None
+    def __findLastStreamOccurenceIn(self, list, ipSrc, portSrc, ipDst, portDst):
+        return next(
+            (
+                stream
+                for stream in list[::-1]
+                if stream.portSrc == portSrc
+                and stream.portDst == portDst
+                and stream.ipSrc == socket.inet_ntoa(ipSrc)
+                and stream.ipDst == socket.inet_ntoa(ipDst)
+            ),
+            None,
+        )

@@ -8,7 +8,7 @@ class Decoder(Plugin):
     __metaclass__ = ABCMeta
 
     @abstractproperty
-    def decoderName(cls):
+    def decoderName(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented    
     
@@ -17,6 +17,6 @@ class Decoder(Plugin):
         return cls.basePriority
 
     @abstractmethod
-    def decodeData(cls, data):
+    def decodeData(self, data):
         """ IMPORTANT: Override as Class Method (using @classmethod) """
         return NotImplemented

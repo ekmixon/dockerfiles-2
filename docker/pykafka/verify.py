@@ -3,6 +3,6 @@ import lz4f
 import xxhash
 import snappy
 
-print("xxhash version: " + xxhash.XXHASH_VERSION)
+print(f"xxhash version: {xxhash.XXHASH_VERSION}")
 
 print("all is good")

@@ -60,8 +60,7 @@ class pcap_miner():
         return pcap
 
     def unpack_ip(self,packed_ip):
-        ip = socket.inet_ntoa(packed_ip)
-        return ip
+        return socket.inet_ntoa(packed_ip)
 
     def quick_unique(self,seq):
         seen = set()
@@ -177,9 +176,10 @@ class pcap_miner():
         getvals = operator.itemgetter('source_ip','destination_ip', 'uri')
         self._http_request_data.sort(key=getvals)
 
-        result = []
-        for k, g in itertools.groupby(self._http_request_data, getvals):
-            result.append(g.next())
+        result = [
+            g.next()
+            for k, g in itertools.groupby(self._http_request_data, getvals)
+        ]
 
         self._http_request_data[:] = result
         return self._http_request_data
@@ -188,9 +188,9 @@ class pcap_miner():
         getvals = operator.itemgetter('type','request', 'response')
         self._dns_request_data.sort(key=getvals)
 
-        result = []
-        for k, g in itertools.groupby(self._dns_request_data, getvals):
-            result.append(g.next())
+        result = [
+            g.next() for k, g in itertools.groupby(self._dns_request_data, getvals)
+        ]
 
         self._dns_request_data[:] = result
         return self._dns_request_data
@@ -208,24 +208,39 @@ class pcap_miner():
         return self._dns_count
 
     def summary2json(self):
-        self._dns_json = []
         self._dest_json = []
         self._http_json = []
         self._flow_json = []
-        self._counts_json = []
+        self._counts_json = [
+            {
+                "packet_count": self._packet_count,
+                "http_count": self._http_count,
+                "dns_count": self._dns_count,
+            }
+        ]
 
-        self._counts_json.append({"packet_count":self._packet_count,"http_count":self._http_count,"dns_count":self._dns_count})
 
-        for dns in self.get_dns_request_data():
-            self._dns_json.append({"type": dns["type"], "request": dns["request"], "response": dns["response"]})
+        self._dns_json = [
+            {
+                "type": dns["type"],
+                "request": dns["request"],
+                "response": dns["response"],
+            }
+            for dns in self.get_dns_request_data()
+        ]
 
-        for ip in self.get_destination_ip_details():
-            self._dest_json.append({"ip_address" : ip['ip_address'], "owner": ip['owner'], "asn": ip['asn'], "netblock": ip['block']})
+        self._dest_json.extend(
+            {
+                "ip_address": ip['ip_address'],
+                "owner": ip['owner'],
+                "asn": ip['asn'],
+                "netblock": ip['block'],
+            }
+            for ip in self.get_destination_ip_details()
+        )
 
         for info in self.get_http_request_data():
-            tmp = {}
-            for key, value in info.items():
-                tmp[key] = value
+            tmp = dict(info.items())
             self._http_json.append(tmp)
 
         for flow in self.get_flows():

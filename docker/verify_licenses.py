@@ -32,12 +32,13 @@ def check_pwsh_license(docker_image: str, licenses: dict, ignore_packages: dict,
         subprocess.check_call(
             ["docker", "run", "--rm", docker_image, "which", "pwsh"], stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as err:
-        if err.returncode == 1:
-            print("Skipping Powershell license verification for [{}] as this is not a powershell image.".format(
-                docker_image))
-            return
-        else:
+        if err.returncode != 1:
             raise
+        print(
+            f"Skipping Powershell license verification for [{docker_image}] as this is not a powershell image."
+        )
+
+        return
     pwsh_modules_out = subprocess.check_output(
         ["docker", "run", "--rm", docker_image, "pwsh", "-c",
          "Get-InstalledModule | Select-Object -Property Name,Author,LicenseUri | ConvertTo-Json"], universal_newlines=True
@@ -82,7 +83,7 @@ def check_pwsh_license(docker_image: str, licenses: dict, ignore_packages: dict,
                 break
         if not found_license:
             msg = f'{name} (author: {m.get("Author")}): no approved license found for uri: {license_uri}'
-            print("FAILURE: {}".format(msg))
+            print(f"FAILURE: {msg}")
             raise Exception(msg)
 
 
@@ -91,40 +92,43 @@ def check_python_license(docker_image: str, licenses: dict, ignore_packages: dic
         subprocess.check_call(
             ["docker", "run", "--rm", docker_image, "which", "python"], stdout=subprocess.DEVNULL)
     except subprocess.CalledProcessError as err:
-        if err.returncode == 1:
-            print("Skipping python license verification for [{}] as this is not a python image.".format(
-                docker_image))
-            return
-        else:
+        if err.returncode != 1:
             raise
+        print(
+            f"Skipping python license verification for [{docker_image}] as this is not a python image."
+        )
+
+        return
     pip_list_json = subprocess.check_output(
         ["docker", "run", "--rm", docker_image, "pip", "list", "--format", "json"])
     pip_list = json.loads(pip_list_json)
     for pkg in pip_list:
         name = pkg["name"]
         if is_pkg_ignored(name, docker_image, ignore_packages):
-            print("Ignoring package: " + name)
+            print(f"Ignoring package: {name}")
             continue
-        print("Checking license for package: {} ...".format(name))
+        print(f"Checking license for package: {name} ...")
         classifiers = []
         found_licenses = []
         if name in known_licenses:
             classifiers = [known_licenses[name]['license']]
         else:
             try:
-                res = req_session.get(
-                    "https://pypi.org/pypi/{}/json".format(name))
+                res = req_session.get(f"https://pypi.org/pypi/{name}/json")
                 res.raise_for_status()
                 pip_info = res.json()
                 classifiers = pip_info["info"].get("classifiers")
             except Exception as ex:
-                print("Failed getting info from pypi (will try pip): " + str(ex))
+                print(f"Failed getting info from pypi (will try pip): {str(ex)}")
         for classifier in classifiers:
             # check that we have license and not just the OSI Approved string
-            if classifier.startswith("License ::") and not classifier == "License :: OSI Approved":
-                print("{}: found license classifier: {}".format(name, classifier))
+            if (
+                classifier.startswith("License ::")
+                and classifier != "License :: OSI Approved"
+            ):
+                print(f"{name}: found license classifier: {classifier}")
                 found_licenses.append(classifier)
-        if len(found_licenses) == 0:  # try getting via pip show
+        if not found_licenses:  # try getting via pip show
             docker_cmd_arr = ["docker", "run", "--rm",
                               docker_image, "pip", "show", name]
             pip_show = subprocess.check_output(
@@ -135,46 +139,50 @@ def check_python_license(docker_image: str, licenses: dict, ignore_packages: dic
                     homepage = line.split(' ')[1].strip()
                 if line.startswith("License:"):
                     if 'UNKNOWN' in line:
-                        print("Got UNKNOWN license from pip show, trying to query package GitHub homepage {} to get license details.".format(homepage))
+                        print(
+                            f"Got UNKNOWN license from pip show, trying to query package GitHub homepage {homepage} to get license details."
+                        )
+
                         owner_and_repo = homepage.split('https://github.com/')[1]
                         repo_license = req_session.get(
-                            "https://api.github.com/repos/{}/license".format(owner_and_repo),
-                            headers={"Accept": "application/vnd.github.v3+json"},
-                            verify=True
+                            f"https://api.github.com/repos/{owner_and_repo}/license",
+                            headers={
+                                "Accept": "application/vnd.github.v3+json"
+                            },
+                            verify=True,
                         ).json()
+
                         license_name = repo_license.get('license', {}).get('name', 'NOT_FOUND_IN_GITHUB')
-                        print("{}: found license from GitHub API: {}".format(name, license_name))
+                        print(f"{name}: found license from GitHub API: {license_name}")
                         found_licenses.append(license_name)
                     else:
-                        print("{}: found license from pip show: {}".format(name, line))
+                        print(f"{name}: found license from pip show: {line}")
                         found_licenses.append(line)
         for found_lic in found_licenses:
             found = False
             for lic in licenses:
                 if re.search(lic["regex"], found_lic):
-                    print("{}: found license: {} matches license: {}".format(
-                        name, found_lic, lic["name"]))
+                    print(f'{name}: found license: {found_lic} matches license: {lic["name"]}')
                     found = True
                     break
             if not found:
-                msg = "{}: no approved license found for license: {}".format(
-                    name, found_lic)
-                print("FAILURE: {}".format(msg))
+                msg = f"{name}: no approved license found for license: {found_lic}"
+                print(f"FAILURE: {msg}")
                 raise Exception(msg)
 
 
 def main():
-    print("Python version: {}".format(sys.version))
+    print(f"Python version: {sys.version}")
     parser = argparse.ArgumentParser(description='Verify licenses used in a docker image',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "docker_image", help="The docker image with tag version to use. For example: demisto/python3:1.5.0.27")
     args = parser.parse_args()
-    with open('{}/approved_licenses.json'.format(sys.path[0])) as f:
+    with open(f'{sys.path[0]}/approved_licenses.json') as f:
         licenses = json.load(f)["licenses"]
-    with open("{}/packages_license_check_exclude.json".format(sys.path[0])) as f:
+    with open(f"{sys.path[0]}/packages_license_check_exclude.json") as f:
         ignore_packages = json.load(f)["packages"]
-    with open("{}/known_licenses.json".format(sys.path[0])) as f:
+    with open(f"{sys.path[0]}/known_licenses.json") as f:
         known_licenses = json.load(f)["packages"]
     print("================= Checking Python packages =================")
     check_python_license(args.docker_image, licenses,
@@ -182,8 +190,9 @@ def main():
     print("================= Checking PowerShell packages =================")
     check_pwsh_license(args.docker_image, licenses,
                        ignore_packages, known_licenses)
-    print("SUCCESS: completed checking all licenses for docker image: {}".format(
-        args.docker_image))
+    print(
+        f"SUCCESS: completed checking all licenses for docker image: {args.docker_image}"
+    )
 
 
 if __name__ == "__main__":

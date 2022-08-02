@@ -11,7 +11,7 @@ class PacketStream:
         self.portSrc = portSrc
         self.ipDst = ipDst
         self.portDst = portDst
-        self.infos = "%s:%s to %s:%s" % (ipSrc, portSrc, ipDst, portDst)
+        self.infos = f"{ipSrc}:{portSrc} to {ipDst}:{portDst}"
         self.protocol = 'unknown protocol'
         self.tsFirstPacket = None
         self.tsLastPacket = None

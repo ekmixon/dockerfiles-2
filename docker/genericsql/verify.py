@@ -20,6 +20,9 @@ engine = sqlalchemy.create_engine('mssql+pyodbc:///testuser:testpass@127.0.0.1:1
 try:
     engine.execute('select 1 as [Result]')
 except Exception as ex:
-    assert "Can't open lib" not in str(ex), "Failed because of missing lib: " + str(ex)
+    assert "Can't open lib" not in str(
+        ex
+    ), f"Failed because of missing lib: {str(ex)}"
+
 
 print("All is good. All imported successfully")

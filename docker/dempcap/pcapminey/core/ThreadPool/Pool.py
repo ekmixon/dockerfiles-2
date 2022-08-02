@@ -15,7 +15,7 @@ class Pool:
 
     def map_async(self, func, objects, callback):
         self._removeDeadWorkers()
-        if not len(self.workers) == 0:
+        if len(self.workers) != 0:
             raise Exception('ThreadPool is still working! Adding new jobs is not allowed!')
 
         for object in objects:

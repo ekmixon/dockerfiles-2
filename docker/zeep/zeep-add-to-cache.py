@@ -16,9 +16,12 @@ def main():
     res.raise_for_status()
     content_type = res.headers.get('content-type')
     if content_type != 'application/xml':
-        raise Exception('Expecting content type to equal: application/xml. Got: ' + content_type)
+        raise Exception(
+            f'Expecting content type to equal: application/xml. Got: {content_type}'
+        )
+
     cache = SqliteCache(path=os.environ['ZEEP_STATIC_CACHE_DB'], timeout=None)
-    print("adding url: {} contents to cache db path: {}".format(args.url, cache._db_path))
+    print(f"adding url: {args.url} contents to cache db path: {cache._db_path}")
     cache.add(args.url, res.content)
 
 

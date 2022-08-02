@@ -14,7 +14,7 @@ def generate_indicator(fake, indicator_type):
     return value, [value, fake.lexify(text="???? ?????? ?? ?????", letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), fake.date_this_century()]
 
 def generate_file(filename, generated_type):
-    print("Generating " + filename)
+    print(f"Generating {filename}")
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',',
                             quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -34,7 +34,7 @@ def generate_file(filename, generated_type):
             if (soFar % 10000 == 0):
                 print(f"Finished {soFar} out of {total}")
 
-    print("Finished" + filename)
+    print(f"Finished{filename}")
 
 
 generate_file('ips.csv', 'IP')

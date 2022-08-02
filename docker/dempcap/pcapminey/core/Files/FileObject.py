@@ -15,10 +15,7 @@ class FileObject(object):
 
     @property
     def name(self):
-        if self._name:
-            return self._name
-        else:
-            return self.type.split('/')[-1]
+        return self._name or self.type.split('/')[-1]
 
     @name.setter
     def name(self, value):

@@ -9,7 +9,7 @@ class ProtocolDissector(Plugin):
     defaultPorts = []
     
     @abstractproperty
-    def protocolName(cls):
+    def protocolName(self):
         """ IMPORTANT: Override as Class Property """
         return NotImplemented
 
@@ -21,6 +21,6 @@ class ProtocolDissector(Plugin):
         return cls.basePriority
         
     @abstractmethod
-    def parseData(cls, data):
+    def parseData(self, data):
         """ IMPORTANT: Override as Class Method (using @classmethod) """
         return NotImplemented

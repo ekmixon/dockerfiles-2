@@ -11,7 +11,7 @@ def verify_stat(filename):
     res = os.stat(filename)
     assert res.st_uid == 4000
     assert res.st_gid == 4000
-    assert oct(res.st_mode)[-3:] == '775'
+    assert oct(res.st_mode).endswith('775')
 
 
 verify_stat('/ml/distilbert-base-uncased_tokenizer')
